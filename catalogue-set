@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+trap 'echo "There is an error in $LINENO, Command is: $BASH_COMMAND"' ERR
 
 USERID=$(id -u)
 R="\e[31m"
@@ -22,69 +24,59 @@ then
 fi
 
 
-VALIDATE(){
-        if [ $1 -ne 0 ] 
-    then
-         echo -e "$2...$R FAILURE $N"
-         exit 1
-    else
-         echo -e "$2....$G SUCCESS $N"
-    fi     
-}
+
  
 dnf module disable nodejs -y &>>$LOG_FILE
-VALIDATE $? "Disabling NodeJs" 
+
 
 
 dnf module enable nodejs:20 -y &>>$LOG_FILE
-VALIDATE $? "enabling nodejs:20" 
+
 
 dnf install nodejs -y &>>$LOG_FILE
-VALIDATE $? "installing nodejs" 
 
 id roboshop &>>$LOG_FILE
 if [ $? -ne 0 ]; then
 useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
-VALIDATE $? "creating system user" 
+ 
 else
      echo -e "user already exist....$Y SKIPPING $N"
 fi
 
 
 mkdir -p /app 
-VALIDATE $? "creating app directory" 
+
 curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip  &>>$LOG_FILE
-VALIDATE $? "Downloading catalogue application" 
+
 cd /app 
-VALIDATE $? "changing to app directory"
+
 rm -rf /app/*
-VALIDATE $? "removing existing code"
+
 unzip /tmp/catalogue.zip &>>$LOG_FILE
-VALIDATE $? "Unzip catalogue"
+
 npm install &>>$LOG_FILE
-VALIDATE $? "install dependencies"
+
 cp $SCRIPT_DIR/catalogue.service /etc/systemd/system/catalogue.service
-VALIDATE $? "copy systemctl services"
+
 systemctl daemon-reload
-VALIDATE $? "daemon reload"
+
 systemctl enable catalogue &>>$LOG_FILE
-VALIDATE $? "enable catalogue"
+
 systemctl start catalogue
-VALIDATE $? "start catalogue"
+
 
 
 cp $SCRIPT_DIR/mongo.repo /etc/yum.repos.d/mongo.repo
-VALIDATE $? "copying mongo repo"
-dnf install mongodb-mongosh -y &>>$LOG_FILE
-VALIDATE $? "installing mongodb client"
+
+dnf install mongodb-mongoshfgf -y &>>$LOG_FILE
+
 
 INDEX=$(mongosh mongodb.jrdaws.life --quiet --eval "db.getMongo().getDBNames().indexOf('catalogue')")
 if [ $INDEX -le 0 ]; then
 mongosh --host $MONGODB_HOST </app/db/master-data.js &>>$LOG_FILE
-VALIDATE $? "Load catalogue products"
+
 else
     echo -e "catalogue products alreadt loaded...$Y SKIPPING $N"
 fi
     
 systemctl restart catalogue
-VALIDATE $? "restarting catalogue"
