@@ -57,7 +57,7 @@ VALIDATE $? "Downloading catalogue application"
 cd /app 
 VALIDATE $? "changing to app directory"
 rm -rf /app/*
-VALIDATE "removing existing code"
+VALIDATE $? "removing existing code"
 unzip /tmp/catalogue.zip &>>$LOG_FILE
 VALIDATE $? "Unzip catalogue"
 npm install &>>$LOG_FILE
@@ -72,7 +72,7 @@ systemctl start catalogue
 VALIDATE $? "start catalogue"
 
 
-cp mongo.repo /etc/yum.repos.d/mongo.repo
+cp $SCRIPT_DIR/mongo.repo /etc/yum.repos.d/mongo.repo
 VALIDATE $? "copying mongo repo"
 dnf install mongodb-mongosh -y &>>$LOG_FILE
 VALIDATE $? "installing mongodb client"
