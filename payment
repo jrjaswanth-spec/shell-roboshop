@@ -33,8 +33,8 @@ VALIDATE(){
          echo -e "$2....$G SUCCESS $N"
     fi     
 }
- 
-dnf install maven -y &>>$LOG_FILE
+
+dnf install python3 gcc python3-devel -y &>>$LOG_FILE
 
 id roboshop &>>$LOG_FILE
 if [ $? -ne 0 ]; then
@@ -46,34 +46,23 @@ fi
 
 mkdir -p /app &>>$LOG_FILE
 VALIDATE $? "creating app directory" 
-curl -o /tmp/shipping.zip https://roboshop-artifacts.s3.amazonaws.com/shipping-v3.zip  &>>$LOG_FILE
-VALIDATE $? "Downloading shipping application" 
+curl -o /tmp/payment.zip https://roboshop-artifacts.s3.amazonaws.com/payment-v3.zip  &>>$LOG_FILE
+VALIDATE $? "Downloading payment application" 
 cd /app 
 VALIDATE $? "changing to app directory"
 rm -rf /app/*
 VALIDATE $? "removing existing code"
-unzip /tmp/shipping.zip &>>$LOG_FILE
-VALIDATE $? "Unzip shipping"
+unzip /tmp/payment.zip &>>$LOG_FILE
+VALIDATE $? "Unzip payment"
 
+pip3 install -r requirements.txt &>>$LOG_FILE
+ 
 
-mvn clean package &>>$LOG_FILE
-mv target/shipping-1.0.jar shipping.jar 
-
-cp $SCRIPT_DIR/shipping.service /etc/systemd/system/shipping.service
+cp $SCRIPT_DIR/payment.service /etc/systemd/system/payment.service
 
 systemctl daemon-reload
 
-systemctl enable shipping &>>$LOG_FILE
+systemctl enable payment &>>$LOG_FILE
 
-dnf install mysql -y
 
-mysql -h $MYSQL_HOST -uroot -pRoboshop@1 -e 'use cities' &>>$LOG_FILE
-
-if [ $? -ne 0 ]; then
-mysql -h mysql.jrdaws.life -uroot -pRoboShop@1 < /app/db/schema.sql &>>$LOG_FILE
-mysql -h mysql.jrdaws.life -uroot -pRoboShop@1 < /app/db/app-user.sql &>>$LOG_FILE
-mysql -h mysql.jrdaws.life -uroot -pRoboShop@1 < /app/db/master-data.sql &>>$LOG_FILE
-else
-    echo -e "shipping dat already loaded... $Y SKIPPING $N"
-fi
-systemctl restart shipping
+systemctl restart payment
